@@ -1,5 +1,6 @@
 import os
 import boto3
+import botocore
 from hashlib import pbkdf2_hmac
 import jwt
 
@@ -22,21 +23,20 @@ def log_in():
             'username': { 'S': username }
         }
     )
-    item = resp['Item']
-    if not item:
+
+    if 'Item' not in resp:
         return jsonify({'error': 'User does not exist'}), 404
+    item = resp['Item']
 
     salt = item['salt']
     db_key = item['key']
-    print(password)
     req_key = pbkdf2_hmac('sha256', password.encode('utf-8'), salt['B'], 100000)
-    print(req_key)
-    print(db_key['B'])
 
     if req_key != db_key['B']:
         return jsonify({'error': 'Incorrect password'}), 401
     else:
-        token = jwt.encode(username, os.environ['SECRET'])
+        token_bytes = jwt.encode({"username": username}, os.environ['SECRET'])
+        token = token_bytes.decode('utf-8')
         return jsonify(token)
 
 @app.route("/users/new", methods=["POST"])
@@ -44,19 +44,24 @@ def create_user():
     username = request.json.get('username')
     password = request.json.get('password')
     salt = os.urandom(32)  # A new salt for this user
-    print(password)
     key = pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-    print(key)
     if not username or not password:
-        return jsonify({'error': 'Please provide username and name'}), 400
-    resp = client.put_item(
-        TableName=USERS_TABLE,
-        Item={
-            'username': {'S': username },
-            'salt': {'B': salt },
-            'key': {'B': key}
-        }
-    )
+        return jsonify({'error': 'Please provide username and password'}), 400
+    try:
+        resp = client.put_item(
+            TableName=USERS_TABLE,
+            Item={
+                'username': {'S': username },
+                'salt': {'B': salt },
+                'key': {'B': key}
+            },
+            ConditionExpression='attribute_not_exists(username)'
+        )
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            return jsonify({'error': 'User already exists'})
+        else:
+            raise
 
     return jsonify({
          'username': username,
