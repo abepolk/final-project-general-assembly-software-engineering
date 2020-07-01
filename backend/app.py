@@ -3,15 +3,35 @@ import boto3
 import botocore
 from hashlib import pbkdf2_hmac
 import jwt
+from flask import Flask, jsonify, request, abort, g
+from functools import wraps
 
-from flask import Flask, jsonify, request
 app = Flask(__name__)
 USERS_TABLE = os.environ['USERS_TABLE']
 client = boto3.client('dynamodb')
 
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'Authorization' not in request.headers:
+            abort(403)
+        auth = request.headers['Authorization']
+        token = auth.split()[1]
+        try:
+            payload = jwt.decode(token, os.environ['SECRET'])
+        except jwt.exceptions.InvalidTokenError:
+            abort(403)
+        g.user = payload
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @app.route("/")
+@login_required
 def hello():
-    return "Hello World!"
+    return f"Hello {g.user['username']}!"
+
 
 @app.route("/users", methods=["POST"])
 def log_in():
@@ -38,6 +58,7 @@ def log_in():
         token_bytes = jwt.encode({"username": username}, os.environ['SECRET'])
         token = token_bytes.decode('utf-8')
         return jsonify(token)
+
 
 @app.route("/users/new", methods=["POST"])
 def create_user():
