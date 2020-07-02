@@ -1,16 +1,21 @@
 import os
+from hashlib import pbkdf2_hmac
+from time import time
+from functools import wraps
+
 import boto3
 import botocore
-from hashlib import pbkdf2_hmac
-import jwt
+
 from flask import Flask, jsonify, request, abort, g
-from functools import wraps
-from time import time
+import jwt
 
 app = Flask(__name__)
+client = boto3.client('dynamodb')
+
 USERS_TABLE = os.environ['USERS_TABLE']
 TASKS_TABLE = os.environ['TASKS_TABLE']
-client = boto3.client('dynamodb')
+
+# Middleware for checking valid token
 
 def login_required(f):
     @wraps(f)
@@ -27,6 +32,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+####### Create, Read, Delete routes
 
 @app.route("/")
 @login_required
@@ -65,6 +71,8 @@ def delete_task():
     )
     return jsonify(request.json)
 
+######## Authentication routes
+
 @app.route("/users", methods=["POST"])
 def log_in():
     username = request.json.get('username')
@@ -75,15 +83,12 @@ def log_in():
             'username': { 'S': username }
         }
     )
-
     if 'Item' not in resp:
         return jsonify({'error': 'User does not exist'}), 404
     item = resp['Item']
-
     salt = item['salt']
     db_key = item['key']
     req_key = pbkdf2_hmac('sha256', password.encode('utf-8'), salt['B'], 100000)
-
     if req_key != db_key['B']:
         return jsonify({'error': 'Incorrect password'}), 401
     else:
@@ -115,7 +120,6 @@ def create_user():
             return jsonify({'error': 'User already exists'})
         else:
             raise
-
     return jsonify({
          'username': username,
          'password': password
