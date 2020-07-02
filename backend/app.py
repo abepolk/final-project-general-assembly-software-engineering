@@ -5,11 +5,12 @@ from hashlib import pbkdf2_hmac
 import jwt
 from flask import Flask, jsonify, request, abort, g
 from functools import wraps
+from time import time
 
 app = Flask(__name__)
 USERS_TABLE = os.environ['USERS_TABLE']
+TASKS_TABLE = os.environ['TASKS_TABLE']
 client = boto3.client('dynamodb')
-
 
 def login_required(f):
     @wraps(f)
@@ -29,9 +30,40 @@ def login_required(f):
 
 @app.route("/")
 @login_required
-def hello():
-    return f"Hello {g.user['username']}!"
+def list_tasks():
+    result = client.scan(
+        TableName=TASKS_TABLE,
+        FilterExpression="task_owner = :owner",
+        ExpressionAttributeValues={
+            ':owner': {'S': g.user['username']}
+        }
+    )
+    print(g.user['username'])
+    items = result['Items']
+    print(items) # IS OWNER BEING SVED?
+    return jsonify({'tasks': items})
 
+@app.route("/", methods=["POST"])
+@login_required
+def create_task():
+    result = client.put_item(
+        TableName=TASKS_TABLE,
+        Item={
+            'time': {'N': str(time())},
+            'task_owner': {'S': g.user['username']},
+            'task_name': {'S': request.json.get('taskName')}
+        }
+    )
+    return jsonify(request.json)
+
+@app.route("/", methods=["DELETE"])
+@login_required
+def delete_task():
+    result = client.delete_item(
+        TableName=TASKS_TABLE,
+        Key={"time": {'N': request.json.get("time")}}
+    )
+    return jsonify(request.json)
 
 @app.route("/users", methods=["POST"])
 def log_in():

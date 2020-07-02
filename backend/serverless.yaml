@@ -5,6 +5,7 @@ plugins:
   - serverless-wsgi
 custom:
   tableName: 'users-table-${self:provider.stage}2'
+  tasksTableName: 'tasks-table-${self:provider.stage}'
   wsgi:
     app: app.app
     packRequirements: false
@@ -27,8 +28,10 @@ provider:
         - dynamodb:DeleteItem
       Resource:
         - { "Fn::GetAtt": ["UsersDynamoDBTable", "Arn" ] }
+        - { "Fn::GetAtt": ["TasksDynamoDBTable", "Arn" ] }
   environment:
     USERS_TABLE: ${self:custom.tableName}
+    TASKS_TABLE: ${self:custom.tasksTableName}
     SECRET: ${ssm:/JWT_secret~true}
 functions:
   app:
@@ -54,3 +57,18 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:custom.tableName}
+    TasksDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: time
+            AttributeType: N
+        KeySchema:
+          -
+            AttributeName: time
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.tasksTableName}
