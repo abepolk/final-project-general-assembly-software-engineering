@@ -16,7 +16,7 @@ function App(props) {
 
   const logIn = async (credentials) => {
     console.log('lgin called')
-    const response = fetch(`${baseUrl}/users`, {
+    const response = await fetch(`${baseUrl}/users`, {
       method: 'POST',
       body: JSON.stringify(credentials),
       headers: {"Content-Type": "application/json"}
@@ -31,6 +31,8 @@ function App(props) {
       alert('The username provided does not have an account.');
     } else if (response.status === 401) {
       alert('Incorrect password');
+    } else {
+      throw response.status
     }
   };
 

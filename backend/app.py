@@ -7,9 +7,13 @@ import boto3
 import botocore
 
 from flask import Flask, jsonify, request, abort, g
+from flask_cors import CORS
 import jwt
 
 app = Flask(__name__)
+# Add AWS backend to list below when you have it
+CORS(app, origin=['localhost:3000'])
+# Should be able to use an env var set up by the flask wsgi aws plugin that tells you if you are running locally or on AWS, see docs for page that also talks about sls wgsi
 client = boto3.client('dynamodb')
 
 USERS_TABLE = os.environ['USERS_TABLE']
