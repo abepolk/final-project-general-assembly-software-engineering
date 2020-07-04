@@ -12,7 +12,7 @@ function App(props) {
   : 'http://localhost:5000';
 
   // No token means not logged in 
-  const [token, setToken] = React.useState('');
+  const [token, setToken] = React.useState(window.localStorage.getItem('token') || '');
 
   const logIn = async (credentials) => {
     console.log('lgin called')

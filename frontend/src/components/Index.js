@@ -7,8 +7,8 @@ function Index(props) {
         return <Redirect to="/login" />
     }
 
-    const {tasks} = props;
-    const {logOut} = tasks;
+    const {fns} = props;
+    const {logOut} = fns;
     return <button onClick={logOut}>Log out</button>
 }
 
