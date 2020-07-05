@@ -11,11 +11,81 @@ function App(props) {
   ? '' // AWS backend URL goes here
   : 'http://localhost:5000';
 
+  // Should only be called to initialize state and checkTasksAgainstBackend, because tasks will otherwise be updated by changing state directly
+  const apiGetTasks = async () => {
+    try {
+      const response = await fetch (baseUrl, {
+        headers: {
+            Authorization: `JWT ${token}`
+        }
+      });
+      if (response.status !== 200) {
+        console.error(response)
+      } else {
+        const result = await response.json();
+        return result.tasks;
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const [tasks, setTasks] = React.useState([])
   // No token means not logged in 
   const [token, setToken] = React.useState(window.localStorage.getItem('token') || '');
 
+  // If React is waiting for this method to complete for some reasons there will be problems
+  const checkTasksAgainstBackend = async (tasksToCheck) => {
+    const result = apiGetTasks();
+    // Check "equality" of result and tasks to check, looking at stackoverflow
+    const arr1 = result.sort()
+    // Do not modify state directly
+    const arr2 = [...tasksToCheck].sort()
+    if (arr1.length !== arr2.length) {
+      return false;
+    }
+    for (let i = 0; i < arr1.length; i++) {
+      if (arr1[i] !== arr2[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const createTask = async (data) => {
+    setTasks([...tasks, data])
+    props.history.push('/')
+    const response = await fetch (`${baseUrl}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `JSON ${token}`
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json()
+    for (const key in data) {
+      if (data[key] !== result[key]) {
+        throw new Error("Backend object not the same")
+      }
+    }
+    // Should the arg be [...tasks, data]?
+    if (!checkTasksAgainstBackend(tasks)) {
+      throw new Error("Check for all tasks failed")
+    }
+  };
+// Test once you're done with this
+
+  // Initializes tasks after login
+  React.useEffect(() => {
+    const effect = async () => {
+      if (token) {
+        setTasks(await apiGetTasks());
+      }
+    }
+    effect()
+  }, [token]);
+
   const logIn = async (credentials) => {
-    console.log('lgin called')
     const response = await fetch(`${baseUrl}/users`, {
       method: 'POST',
       body: JSON.stringify(credentials),
@@ -24,7 +94,7 @@ function App(props) {
     if (response.status === 200) {
       const token = await response.json();
       setToken(token);
-      window.localStorage.setItem('token', JSON.stringify(token));
+      window.localStorage.setItem('token', token);
       props.history.push('/');
     } else if (response.status === 404) {
       //ignoring JSON for now
@@ -32,7 +102,7 @@ function App(props) {
     } else if (response.status === 401) {
       alert('Incorrect password');
     } else {
-      throw response.status
+      throw response.status;
     }
   };
 
@@ -47,23 +117,9 @@ function App(props) {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Scrooll down for login button
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
       <Switch>
         <Route path="/login" component={(props) => <LogIn {...props} loggedIn={Boolean(token)} logIn={logIn} />} />
-        <Route path="/" component={(props) => <Index {...props} loggedIn={Boolean(token)} fns={fns} />} />
+        <Route path="/" component={(props) => <Index {...props} loggedIn={Boolean(token)} fns={fns} tasks={tasks}/>} />
       </Switch>
     </div>
   );

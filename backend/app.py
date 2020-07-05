@@ -2,6 +2,7 @@ import os
 from hashlib import pbkdf2_hmac
 from time import time
 from functools import wraps
+import logging
 
 import boto3
 import botocore
@@ -10,9 +11,13 @@ from flask import Flask, jsonify, request, abort, g
 from flask_cors import CORS
 import jwt
 
+# logger = logging.getLogger('flask_cors')
+# logger.setLevel(logging.DEBUG)
+# logger.addHandler(logging.StreamHandler())
+
 app = Flask(__name__)
 # Add AWS backend to list below when you have it
-CORS(app, origin=['localhost:3000'])
+CORS(app, origin=['http://localhost:3000'])
 # Should be able to use an env var set up by the flask wsgi aws plugin that tells you if you are running locally or on AWS, see docs for page that also talks about sls wgsi
 client = boto3.client('dynamodb')
 
@@ -25,12 +30,14 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'Authorization' not in request.headers:
+            print('auth not present')
             abort(403)
         auth = request.headers['Authorization']
         token = auth.split()[1]
         try:
             payload = jwt.decode(token, os.environ['SECRET'])
         except jwt.exceptions.InvalidTokenError:
+            print('invalid token')
             abort(403)
         g.user = payload
         return f(*args, **kwargs)
@@ -51,7 +58,7 @@ def list_tasks():
     print(g.user['username'])
     items = result['Items']
     print(items) # IS OWNER BEING SVED?
-    return jsonify({'tasks': items})
+    return jsonify({'tasks': [{"taskName": item['task_name']['S'], "taskOwner": item['task_owner']['S'], 'time': item['time']} for item in items]})
 
 @app.route("/", methods=["POST"])
 @login_required

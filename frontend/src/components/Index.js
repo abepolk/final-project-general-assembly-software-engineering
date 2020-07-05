@@ -3,13 +3,23 @@ import {Redirect} from 'react-router-dom'
 
 function Index(props) {
 
+    const {fns, tasks} = props;
+    const {logOut} = fns;
+
     if (!props.loggedIn) {
         return <Redirect to="/login" />
     }
 
-    const {fns} = props;
-    const {logOut} = fns;
-    return <button onClick={logOut}>Log out</button>
+    return (
+        <>
+            <button onClick={logOut}>Log out</button>
+            <ul>
+                {tasks.map((task) => {
+                  return <li>{task.taskName}</li>  
+                })}
+            </ul>
+        </>
+    )
 }
 
 export default Index;
