@@ -36,7 +36,7 @@ function App(props) {
 
   // If React is waiting for this method to complete for some reasons there will be problems
   const checkTasksAgainstBackend = async (tasksToCheck) => {
-    const result = apiGetTasks();
+    const result = await apiGetTasks();
     // Check "equality" of result and tasks to check, looking at stackoverflow
     const arr1 = result.sort()
     // Do not modify state directly
@@ -58,7 +58,8 @@ function App(props) {
     const response = await fetch (`${baseUrl}`, {
       method: 'POST',
       headers: {
-        Authorization: `JSON ${token}`
+        Authorization: `JSON ${token}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(data),
     });
@@ -112,6 +113,7 @@ function App(props) {
   }
 
   const fns = {
+    createTask,
     logOut
   };
 
