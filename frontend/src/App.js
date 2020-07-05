@@ -34,47 +34,58 @@ function App(props) {
   // No token means not logged in 
   const [token, setToken] = React.useState(window.localStorage.getItem('token') || '');
 
-  // If React is waiting for this method to complete for some reasons there will be problems
-  const checkTasksAgainstBackend = async (tasksToCheck) => {
-    const result = await apiGetTasks();
-    // Check "equality" of result and tasks to check, looking at stackoverflow
-    const arr1 = result.sort()
-    // Do not modify state directly
-    const arr2 = [...tasksToCheck].sort()
-    if (arr1.length !== arr2.length) {
-      return false;
-    }
-    for (let i = 0; i < arr1.length; i++) {
-      if (arr1[i] !== arr2[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
+  // // If React is waiting for this method to complete for some reasons there will be problems
+  // const checkTasksAgainstBackend = async (tasksToCheck) => {
+  //   const result = await apiGetTasks();
+  //   // Check "equality" of result and tasks to check, looking at stackoverflow
+  //   const arr1 = result.sort()
+  //   // Do not modify state directly
+  //   const arr2 = [...tasksToCheck].sort()
+  //   if (arr1.length !== arr2.length) {
+  //     return false;
+  //   }
+  //   for (let i = 0; i < arr1.length; i++) {
+  //     if (arr1[i] !== arr2[i]) {
+  //       return false;
+  //     }
+  //   }
+  //   return true;
+  // }
 
   const createTask = async (data) => {
-    setTasks([...tasks, data])
-    props.history.push('/')
+    // props.history.push('/')
     const response = await fetch (`${baseUrl}`, {
       method: 'POST',
       headers: {
-        Authorization: `JSON ${token}`,
+        Authorization: `JWT ${token}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(data),
     });
     const result = await response.json()
-    for (const key in data) {
-      if (data[key] !== result[key]) {
-        throw new Error("Backend object not the same")
+    // setTasks must be at end of method because the backend adds a timestamp which is necessary for deletion
+    setTasks([...tasks, result])
+  };
+
+  const removeTask = async (task) => {
+    // Time is a timestamp and is used as an id because AWS dyanmoDb doesn't support incremental IDs
+    setTasks(tasks.filter((taskToTest) => taskToTest.time !== task.time))
+    const response = await fetch(`${baseUrl}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `JWT ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(task)
+    });
+    const result = await response.json();
+    for (const key in result) {
+      if (task[key] !== result[key]) {
+        throw new Error("Backend object not the same");
       }
     }
-    // Should the arg be [...tasks, data]?
-    if (!checkTasksAgainstBackend(tasks)) {
-      throw new Error("Check for all tasks failed")
-    }
+    // if (!checkTasksAgainstBackend(tasks))
   };
-// Test once you're done with this
 
   // Initializes tasks after login
   React.useEffect(() => {
@@ -114,6 +125,7 @@ function App(props) {
 
   const fns = {
     createTask,
+    removeTask,
     logOut
   };
 

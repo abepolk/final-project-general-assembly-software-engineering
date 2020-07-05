@@ -4,7 +4,7 @@ import {Redirect} from 'react-router-dom'
 function Index(props) {
 
     const {fns, tasks} = props;
-    const {logOut, createTask} = fns;
+    const {logOut, createTask, removeTask} = fns;
 
     const [formData, setFormData] = React.useState('');
 
@@ -36,7 +36,7 @@ function Index(props) {
 
             <ul>
                 {tasks.map((task, index) => {
-                  return <li key={index}>{task.taskName}</li>  
+                  return <li key={index}>{task.taskName}<button onClick={(event) => removeTask(task)}>Mark complete</button></li>  
                 })}
             </ul>
         </>

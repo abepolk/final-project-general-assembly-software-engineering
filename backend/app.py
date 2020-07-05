@@ -2,7 +2,7 @@ import os
 from hashlib import pbkdf2_hmac
 from time import time
 from functools import wraps
-import logging
+# import logging
 
 import boto3
 import botocore
@@ -55,32 +55,39 @@ def list_tasks():
             ':owner': {'S': g.user['username']}
         }
     )
-    print(g.user['username'])
     items = result['Items']
     print(items) # IS OWNER BEING SVED?
-    return jsonify({'tasks': [{"taskName": item['task_name']['S'], "taskOwner": item['task_owner']['S'], 'time': item['time']} for item in items]})
+    return jsonify({'tasks': [{"taskName": item['task_name']['S'], "taskOwner": item['task_owner']['S'], 'time': item['time']['N']} for item in items]})
 
 @app.route("/", methods=["POST"])
 @login_required
 def create_task():
+    current_time = str(time())
     result = client.put_item(
         TableName=TASKS_TABLE,
         Item={
-            'time': {'N': str(time())},
+            'time': {'N': current_time},
             'task_owner': {'S': g.user['username']},
             'task_name': {'S': request.json.get('taskName')}
         }
     )
-    return jsonify(request.json)
+    return jsonify({
+        'time': current_time,
+        'taskOwner': g.user['username'],
+        'taskName': request.json.get('taskName')
+    })
 
 @app.route("/", methods=["DELETE"])
 @login_required
 def delete_task():
     result = client.delete_item(
         TableName=TASKS_TABLE,
-        Key={"time": {'N': request.json.get("time")}}
+        Key={"time": {'N': request.json.get("time")}},
+        ReturnValues='ALL_OLD'
     )
-    return jsonify(request.json)
+    result_data = result['Attributes']
+    deleted = {'time': result_data['time']['N'], 'taskName': result_data['task_name']['S'], 'taskOwner': result_data['task_owner']['S']}
+    return jsonify(deleted)
 
 ######## Authentication routes
 
