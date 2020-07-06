@@ -135,7 +135,7 @@ def create_user():
         )
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            return jsonify({'error': 'User already exists'})
+            return jsonify({'error': 'User already exists'}), 409
         else:
             raise
     return jsonify({

@@ -1,9 +1,9 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import {Switch, Route} from 'react-router-dom'
 import LogIn from './components/LogIn.js'
 import Index from './components/Index.js'
+import NewUser from './components/NewUser.js'
 
 function App(props) {
   
@@ -123,6 +123,24 @@ function App(props) {
     window.localStorage.removeItem('token');
   }
 
+  const createUser = async (credentials) => {
+    const response = await fetch(`${baseUrl}/users/new`, {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+      headers: {"Content-Type": "application/json"}
+    });
+    if (response.status === 200) {
+      alert('The new user has been created.');
+      props.history.push('/login')
+    } else if (response.status === 409) {
+      alert('That username is already in use.');
+    } else if (response.status === 400) {
+      alert('Please provide a username and password.');
+    } else {
+      throw response.status;
+    }
+  }
+
   const fns = {
     createTask,
     removeTask,
@@ -132,7 +150,8 @@ function App(props) {
   return (
     <div className="App">
       <Switch>
-        <Route path="/login" component={(props) => <LogIn {...props} loggedIn={Boolean(token)} logIn={logIn} />} />
+        <Route path="/login" component={(props) => <LogIn {...props} loggedIn={Boolean(token)} logIn={logIn}/>} />
+        <Route path="/create-user" component={(props) => <NewUser {...props} loggedIn={Boolean(token)} createUser={createUser}/>} />
         <Route path="/" component={(props) => <Index {...props} loggedIn={Boolean(token)} fns={fns} tasks={tasks}/>} />
       </Switch>
     </div>

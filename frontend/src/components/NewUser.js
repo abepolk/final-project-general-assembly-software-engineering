@@ -1,15 +1,15 @@
 import React from 'react'
-import {Redirect, Link} from 'react-router-dom'
+import {Redirect} from 'react-router-dom'
 
-function LogIn(props) {
+function NewUser(props) {
 
 
-    const {logIn} = props;
+    const {createUser} = props;
 
     const [formData, setFormData] = React.useState('');
 
     const handleChange = (event) => {
-                setFormData({ ...formData, [event.currentTarget.name]: event.currentTarget.value });
+        setFormData({ ...formData, [event.currentTarget.name]: event.currentTarget.value });
     };    
 
     if (props.loggedIn) {
@@ -19,11 +19,11 @@ function LogIn(props) {
 
     return (
         <>
-            <h1>Log in</h1>
-            <div className="loginContainer">
+            <h1>Create new user</h1>
+            <div className="createNewUserContainer">
                 <form onSubmit={(event) => {
                     event.preventDefault();
-                    logIn(formData);
+                    createUser(formData);
                 }}>
                     <label>Username:</label> 
                     <input
@@ -40,12 +40,11 @@ function LogIn(props) {
                         onChange={handleChange}
                     />
                     <br/>
-                    <input className="submit" type="submit" value="Log In" />
+                    <input className="submit" type="submit" value="Create new user" />
                 </form>
             </div>
-            <Link to="create-user">Create new user</Link>
         </>
     )
 }
 
-export default LogIn;
+export default NewUser;
