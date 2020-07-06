@@ -17,7 +17,7 @@ import jwt
 
 app = Flask(__name__)
 # Add AWS backend to list below when you have it
-CORS(app, origin=['http://localhost:3000'])
+CORS(app, origin=['http://localhost:3000', 'https://master--gallant-hermann-47a94a.netlify.app'])
 # Should be able to use an env var set up by the flask wsgi aws plugin that tells you if you are running locally or on AWS, see docs for page that also talks about sls wgsi
 client = boto3.client('dynamodb')
 

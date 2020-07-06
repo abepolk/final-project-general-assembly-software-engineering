@@ -8,7 +8,7 @@ import Index from './components/Index.js'
 function App(props) {
   
   const baseUrl = process.env.NODE_ENV === 'production'
-  ? '' // AWS backend URL goes here
+  ? 'https://bs5md8flg3.execute-api.us-east-1.amazonaws.com/prod'
   : 'http://localhost:5000';
 
   // Should only be called to initialize state and checkTasksAgainstBackend, because tasks will otherwise be updated by changing state directly
