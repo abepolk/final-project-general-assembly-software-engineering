@@ -15,7 +15,7 @@ custom:
 provider:
   name: aws
   runtime: python3.7
-  stage: dev
+  stage: prod
   region: us-east-1
   iamRoleStatements:
     - Effect: Allow
