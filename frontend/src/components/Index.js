@@ -20,23 +20,23 @@ function Index(props) {
     return (
         <>
             <button onClick={logOut}>Log out</button>
+            <h1 className="title">Never Forget Again</h1>
+            <h3>Create new task</h3>
             <form onSubmit={(event) => {
                 event.preventDefault();
                 createTask(formData);
             }}>
-                <label>Task:</label> 
                 <input
                     type="text"
                     name="taskName"
                     onChange={handleChange}
                 /><br/>
                 <br/>
-                <input className="submit" type="submit" value="Add new task" />
-            </form>
-
-            <ul>
+                <input className="submit" type="submit" value="Add task" />
+            </form>\
+            <ul className="task-container">
                 {tasks.map((task, index) => {
-                  return <li key={index}>{task.taskName}<button onClick={(event) => removeTask(task)}>Mark complete</button></li>  
+                  return <li key={index} className={`task ${index % 2 ? 'odd' : 'even'}`}>{task.taskName}<button onClick={(event) => removeTask(task)}>Mark complete</button></li>  
                 })}
             </ul>
         </>
